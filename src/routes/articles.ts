@@ -2,6 +2,7 @@ import { Router } from "express";
 import type { PoolClient, QueryResult, QueryResultRow } from "pg";
 import { asyncHandler } from "../asyncHandler";
 import { pool } from "../db";
+import { sanitizeArticleContent } from "../lib/sanitizeContent";
 import { slugify } from "../lib/slugify";
 import { authenticate, tryAuthenticate } from "../middleware/authenticate";
 import { requireRole } from "../middleware/requireRole";
@@ -442,7 +443,7 @@ articlesRouter.post(
           title,
           slug,
           excerpt ?? null,
-          content,
+          sanitizeArticleContent(content),
           authorId,
           category_id ?? null,
           status,
@@ -565,7 +566,7 @@ articlesRouter.patch(
           title ?? null,
           slug ?? null,
           excerpt ?? null,
-          content ?? null,
+          content ? sanitizeArticleContent(content) : null,
           category_id ?? null,
           requestedStatus ?? null,
           publishedAt ?? null,

@@ -5,6 +5,7 @@ import { pool } from "./db";
 import { articlesRouter } from "./routes/articles";
 import { authRouter } from "./routes/auth";
 import { categoriesRouter } from "./routes/categories";
+import { subscribersRouter } from "./routes/subscribers";
 import { uploadsRouter } from "./routes/uploads";
 import { usersRouter } from "./routes/users";
 
@@ -32,6 +33,7 @@ app.use("/auth", authRouter);
 app.use("/categories", categoriesRouter);
 app.use("/articles", articlesRouter);
 app.use("/uploads", uploadsRouter);
+app.use("/subscribers", subscribersRouter);
 
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   const statusCode =
