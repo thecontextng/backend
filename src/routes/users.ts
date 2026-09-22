@@ -91,6 +91,36 @@ usersRouter.patch(
   })
 );
 
+usersRouter.post(
+  "/:id/reset-password",
+  requireRole("admin"),
+  asyncHandler(async (req, res) => {
+    const { password } = req.body ?? {};
+
+    if (!password || typeof password !== "string" || password.length < 8) {
+      res.status(400).json({ error: "password must be at least 8 characters" });
+      return;
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const result = await pool.query(
+      `UPDATE users
+       SET password_hash = $1,
+           updated_at = now()
+       WHERE id = $2
+       RETURNING ${PUBLIC_COLUMNS}`,
+      [passwordHash, req.params.id]
+    );
+
+    if (result.rowCount === 0) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    res.json(result.rows[0]);
+  })
+);
+
 usersRouter.delete(
   "/:id",
   requireRole("admin"),

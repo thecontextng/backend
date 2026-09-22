@@ -30,6 +30,7 @@ const LIST_FIELDS = `
   articles.status,
   articles.author_id,
   articles.published_at,
+  articles.byline,
   users.name AS author_name,
   categories.name AS category_name,
   categories.slug AS category_slug,
@@ -57,6 +58,7 @@ const DETAIL_FIELDS = `
   articles.category_id,
   articles.created_at,
   articles.updated_at,
+  articles.byline,
   users.name AS author_name,
   categories.name AS category_name,
   categories.slug AS category_slug
@@ -400,6 +402,7 @@ articlesRouter.post(
       published_at: requestedPublishedAt,
       author_id: requestedAuthorId,
       media: requestedMedia,
+      byline,
     } = req.body ?? {};
 
     if (!title || !content) {
@@ -435,9 +438,9 @@ articlesRouter.post(
       const insertResult = await client.query(
         `INSERT INTO articles (
            title, slug, excerpt, content, author_id, category_id,
-           status, published_at, featured_image_url, seo_title, seo_description, tags
+           status, published_at, featured_image_url, seo_title, seo_description, tags, byline
          )
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
          RETURNING id`,
         [
           title,
@@ -452,6 +455,7 @@ articlesRouter.post(
           seo_title ?? title,
           seo_description ?? excerpt ?? null,
           tagList,
+          typeof byline === "string" && byline.trim() ? byline.trim() : null,
         ]
       );
 
@@ -523,6 +527,7 @@ articlesRouter.patch(
         published_at: requestedPublishedAt,
         author_id: requestedAuthorId,
         media: requestedMedia,
+        byline,
       } = req.body ?? {};
 
       if (requestedStatus !== undefined && !STATUSES.includes(requestedStatus)) {
@@ -560,8 +565,9 @@ articlesRouter.patch(
            seo_description = COALESCE($10, seo_description),
            tags = COALESCE($11, tags),
            author_id = COALESCE($12, author_id),
+           byline = COALESCE($13, byline),
            updated_at = now()
-         WHERE id = $13`,
+         WHERE id = $14`,
         [
           title ?? null,
           slug ?? null,
@@ -575,6 +581,7 @@ articlesRouter.patch(
           seo_description ?? null,
           Array.isArray(tags) ? tags.map(String) : null,
           isManager && requestedAuthorId ? requestedAuthorId : null,
+          typeof byline === "string" ? byline.trim() : null,
           existing.id,
         ]
       );
