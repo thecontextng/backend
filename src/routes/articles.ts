@@ -30,7 +30,7 @@ const LIST_FIELDS = `
   articles.status,
   articles.author_id,
   articles.published_at,
-  users.name AS author_name,
+  COALESCE(articles.byline, users.name) AS author_name,
   categories.name AS category_name,
   categories.slug AS category_slug,
   (
@@ -54,10 +54,11 @@ const DETAIL_FIELDS = `
   articles.status,
   articles.published_at,
   articles.author_id,
+  articles.byline,
   articles.category_id,
   articles.created_at,
   articles.updated_at,
-  users.name AS author_name,
+  COALESCE(articles.byline, users.name) AS author_name,
   categories.name AS category_name,
   categories.slug AS category_slug
 `;
@@ -89,6 +90,10 @@ async function fetchArticleWithMedia(client: Queryable, id: string) {
   );
 
   return { ...articleResult.rows[0], media: mediaResult.rows };
+}
+
+function normalizeByline(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
 async function findUniqueSlug(
@@ -348,7 +353,7 @@ articlesRouter.get(
          articles.seo_description,
          articles.tags,
          articles.published_at,
-         users.name AS author_name,
+         COALESCE(articles.byline, users.name) AS author_name,
          categories.name AS category_name,
          categories.slug AS category_slug
        FROM articles
@@ -399,6 +404,7 @@ articlesRouter.post(
       status: requestedStatus,
       published_at: requestedPublishedAt,
       author_id: requestedAuthorId,
+      byline,
       media: requestedMedia,
     } = req.body ?? {};
 
@@ -435,9 +441,9 @@ articlesRouter.post(
       const insertResult = await client.query(
         `INSERT INTO articles (
            title, slug, excerpt, content, author_id, category_id,
-           status, published_at, featured_image_url, seo_title, seo_description, tags
+           status, published_at, featured_image_url, seo_title, seo_description, tags, byline
          )
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
          RETURNING id`,
         [
           title,
@@ -452,6 +458,7 @@ articlesRouter.post(
           seo_title ?? title,
           seo_description ?? excerpt ?? null,
           tagList,
+          normalizeByline(byline),
         ]
       );
 
@@ -522,6 +529,7 @@ articlesRouter.patch(
         status: requestedStatus,
         published_at: requestedPublishedAt,
         author_id: requestedAuthorId,
+        byline,
         media: requestedMedia,
       } = req.body ?? {};
 
@@ -560,6 +568,7 @@ articlesRouter.patch(
            seo_description = COALESCE($10, seo_description),
            tags = COALESCE($11, tags),
            author_id = COALESCE($12, author_id),
+           byline = CASE WHEN $14::boolean THEN $15::text ELSE byline END,
            updated_at = now()
          WHERE id = $13`,
         [
@@ -576,6 +585,9 @@ articlesRouter.patch(
           Array.isArray(tags) ? tags.map(String) : null,
           isManager && requestedAuthorId ? requestedAuthorId : null,
           existing.id,
+          // Unlike the COALESCE'd fields, an empty byline must be able to clear it.
+          byline !== undefined,
+          normalizeByline(byline),
         ]
       );
 
