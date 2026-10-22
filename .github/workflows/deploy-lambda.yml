@@ -10,12 +10,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check for hidden payloads
+        run: node scripts/check-suspicious.cjs
+
       - uses: actions/setup-node@v4
         with:
           node-version: 24
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=moderate
 
       - name: Build
         run: npm run build
