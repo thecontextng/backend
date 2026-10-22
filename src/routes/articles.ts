@@ -64,6 +64,8 @@ const DETAIL_FIELDS = `
 `;
 
 interface Queryable {
+  // Mirrors pg's own default row type so untyped queries stay as loose as client.query().
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   query<T extends QueryResultRow = any>(text: string, params?: unknown[]): Promise<QueryResult<T>>;
 }
 
