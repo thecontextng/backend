@@ -1,0 +1,8 @@
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "Commit blocked: gitleaks is required for secret scanning."
+  echo "Install it: brew install gitleaks (or see https://github.com/gitleaks/gitleaks#installing)"
+  exit 1
+fi
+
+gitleaks git --pre-commit --redact --staged --verbose
+node scripts/check-suspicious.cjs --staged
