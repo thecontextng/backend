@@ -46,7 +46,7 @@
     "@types/node": "^20.14.9",
     "@types/pg": "^8.11.10",
     "@types/sanitize-html": "^2.16.2",
-    "eslint": "^9.39.5",
+    "eslint": "^10.13.0",
     "globals": "^17.13.0",
     "husky": "^9.1.7",
     "node-pg-migrate": "^9.0.0",
